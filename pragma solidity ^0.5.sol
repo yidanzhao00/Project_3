@@ -98,11 +98,18 @@ contract PersonalAccount is Accounts {
     
     function withdraw(uint amount) public {
         require(msg.sender == account_owner);
-        
+        msg.sender.transfer(amount);
+    }
+    
+    function transfer(address recipient, uint amount) public {
+        address payable recipient;
+        require(msg.sender == account_owner);
+        recipient.transfer(amount);
+    }   
     
     
     }
-}
+
 contract BusinessAccount is Accounts {
     constructor(uint _Num, string memory _Name) Accounts(_Num, _Name) public {
     }
@@ -110,13 +117,30 @@ contract BusinessAccount is Accounts {
     address payable account_owner;
     uint public last_withdraw_block;
     uint public last_withdraw_amount;
-        
+    
+    address public last_to_deposit;
+    uint public last_deposit_block;
+    uint public last_deposit_amount;
+    
     function withdraw(uint amount) public {
         require(msg.sender == account_owner);
-            
+        msg.sender.transfer(amount); 
     }
+    
+    function deposit() public payable {
+
+        if (last_to_deposit != msg.sender) {
+        last_to_deposit = msg.sender;
+    }
+
+        last_deposit_block = block.number;
+        last_deposit_amount = msg.value;
+    }
+    
+    function getBal()
+    
 }
-contract JointSavings is Accounts{
+contract JointSavings{
     address payable account_one;
     address payable account_two;
 
