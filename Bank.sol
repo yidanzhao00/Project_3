@@ -23,7 +23,6 @@ contract Bank {
         
     }
     
-    
     function getBranchName(uint branchNumber) public view returns(string memory) {
         return Branches[branchNumber].getName();
     }
@@ -31,6 +30,7 @@ contract Bank {
     function createAccount(uint choice, uint branchNumber, string memory _Name) internal {
         Branches[branchNumber].createAccount(choice, _Name);
     }
+   
 }
 contract Branch {
     
@@ -41,7 +41,8 @@ contract Branch {
     uint BranchNumber;
     mapping(uint => PersonalAccount) Personals;
     mapping(uint => BusinessAccount) Businesses;
-    enum AccountType {Personal, Business}
+    mapping(uint => JointSavingsAccount) JointSavings;
+    enum AccountType {Personal, Business, JointSavings}
     event AddedAccount(uint AccountNumber, string AccountName);
     
     constructor(string memory _BranchName, uint branchNumber) public {
@@ -72,11 +73,17 @@ contract Branch {
             Personals[Account_ID.current()]=new PersonalAccount(Account_ID.current(), _Name);
         }
         else {
-            Businesses[Account_ID.current()]=new BusinessAccount(Account_ID.current(), _Name);
+             Businesses[Account_ID.current()]=new BusinessAccount(Account_ID.current(), _Name);
         }
+        
+        emit AddedAccount(Account_ID.current(), _Name);
+        Account_ID.increment();
+    }    
+    function createJointSavings(address addr1, address addr2, string memory _Name) public {
         emit AddedAccount(Account_ID.current(), _Name);
         Account_ID.increment();
     }
+    
 }
 contract Accounts {
     uint accountID;
@@ -96,20 +103,35 @@ contract PersonalAccount is Accounts {
     uint public last_withdraw_block;
     uint public last_withdraw_amount;
     
+    address public last_to_deposit;
+    uint public last_deposit_block;
+    uint public last_deposit_amount;
+    
     function withdraw(uint amount) public {
         require(msg.sender == account_owner);
         msg.sender.transfer(amount);
     }
     
-    function transfer(address recipient, uint amount) public {
-        address payable recipient;
+    function transfer(address payable recipient, uint amount) public {
         require(msg.sender == account_owner);
         recipient.transfer(amount);
     }   
     
+    function getBal() public view returns(uint) {
+        return address(this).balance;
+    }
     
+    function deposit() public payable {
+
+        if (last_to_deposit != msg.sender) {
+        last_to_deposit = msg.sender;
     }
 
+        last_deposit_block = block.number;
+        last_deposit_amount = msg.value;
+    
+    }
+}
 contract BusinessAccount is Accounts {
     constructor(uint _Num, string memory _Name) Accounts(_Num, _Name) public {
     }
@@ -137,10 +159,13 @@ contract BusinessAccount is Accounts {
         last_deposit_amount = msg.value;
     }
     
-    function getBal()
+    function getBal() public view returns(uint) {
+        return address(this).balance;
+    }
     
+    function() external payable {}
 }
-contract JointSavings{
+contract JointSavingsAccount is Accounts{
     address payable account_one;
     address payable account_two;
 
